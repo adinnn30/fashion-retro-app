@@ -4,120 +4,116 @@ import numpy as np
 from PIL import Image, ImageOps
 import os
 
-# --- KONFIGURASI TAMPILAN RETRO MODERN (CREAM-RED) ---
-st.set_page_config(page_title="Fashion Retro AI", layout="centered")
+# --- TAMPILAN KATALOG RETRO (RED ON CREAM) ---
+st.set_page_config(page_title="Fashion AI Katalog", layout="centered")
 
 st.markdown("""
     <style>
-    @import url('https://fonts.googleapis.com/css2?family=Special+Elite&display=swap');
+    @import url('https://fonts.googleapis.com/css2?family=Courier+Prime:wght@400;700&display=swap');
 
-    /* Warna Latar Belakang Seluruh Web (Cream) */
+    /* Latar Belakang Cream */
     .stApp {
-        background-color: #F5F5DC; 
+        background-color: #FDF5E6 !important; 
     }
     
-    /* Warna Tulisan Umum (Merah Gelap) */
-    h1, h2, h3, p, span, label {
-        font-family: 'Special Elite', cursive;
-        color: #8B0000 !important;
+    /* Font Semua Tulisan Jadi Typewriter Style Merah */
+    section, div, p, h1, h2, h3, span, label {
+        font-family: 'Courier Prime', monospace !important;
+        color: #B22222 !important; /* Merah Marun Retro */
     }
 
-    /* Kotak Hasil Prediksi (Merah) */
-    .prediction-card {
-        background-color: #8B0000; /* Latar Kotak Merah */
+    /* Garis Pembatas Tebal ala Koran Lama */
+    .retro-border {
+        border: 3px solid #B22222;
         padding: 20px;
-        border-radius: 0px;
-        border: 5px double #F5F5DC; /* Frame Cream */
-        margin-bottom: 10px;
+        margin-bottom: 20px;
+        background-color: #FDF5E6;
+    }
+
+    /* Judul Besar */
+    .judul-katalog {
         text-align: center;
-        box-shadow: 5px 5px 0px #5a0000;
+        font-size: 40px;
+        font-weight: 700;
+        text-transform: uppercase;
+        border-bottom: 8px double #B22222;
+        margin-bottom: 20px;
     }
 
-    /* TULISAN DI DALAM KOTAK PREDIKSI (CREAM) */
-    .prediction-card h2, .prediction-card h3 {
-        color: #F5F5DC !important; /* Tulisan jadi Cream di atas Merah */
-        margin: 0;
-        font-family: 'Special Elite', cursive;
-    }
-
-    /* Garis pemisah retro */
-    .retro-line {
-        border-top: 5px solid #8B0000;
-        margin: 20px 0;
-    }
-
-    /* Progress bar warna Oranye Retro */
+    /* Progress Bar Merah */
     .stProgress > div > div > div > div {
-        background-color: #FF4500;
+        background-color: #B22222 !important;
+    }
+
+    /* Tombol Retro */
+    .stButton>button {
+        background-color: #B22222 !important;
+        color: #FDF5E6 !important;
+        border-radius: 0px !important;
+        border: none !important;
+        width: 100%;
+        font-weight: bold;
     }
     </style>
     """, unsafe_allow_html=True)
 
-# --- FUNGSI LOAD MODEL ---
+# --- LOAD MODEL ---
 @st.cache_resource
 def load_model():
     model_path = "model_fashion.tflite"
     if not os.path.exists(model_path):
-        st.error(f"File {model_path} tidak ditemukan!")
         return None
     try:
         interpreter = tf.lite.Interpreter(model_path=model_path)
         interpreter.allocate_tensors()
         return interpreter
-    except Exception as e:
-        st.error(f"Gagal load model: {e}")
+    except:
         return None
 
-# Urutan Class: 0: Accessories, 1: Apparel, 2: Footwear
 CLASS_NAMES = ['ACCESSORIES', 'APPAREL', 'FOOTWEAR']
 
 def predict(image, interpreter):
     input_details = interpreter.get_input_details()
     output_details = interpreter.get_output_details()
-    
-    # Preprocessing
-    input_shape = input_details[0]['shape']
-    size = (input_shape[1], input_shape[2])
+    size = (input_details[0]['shape'][1], input_details[0]['shape'][2])
     image = ImageOps.fit(image, size, Image.Resampling.LANCZOS)
-    img_array = np.asarray(image).astype(np.float32)
-    img_array = img_array / 255.0
+    img_array = np.asarray(image).astype(np.float32) / 255.0
     img_array = np.expand_dims(img_array, axis=0)
-
     interpreter.set_tensor(input_details[0]['index'], img_array)
     interpreter.invoke()
     return interpreter.get_tensor(output_details[0]['index'])[0]
 
-# --- TAMPILAN UTAMA ---
-st.markdown("<h1 style='text-align: center;'>🧥 FASHION RETRO ANALYZER 🧥</h1>", unsafe_allow_html=True)
-st.markdown("<div class='retro-line'></div>", unsafe_allow_html=True)
+# --- UI ---
+st.markdown("<div class='judul-katalog'>FASHION AI<br>VINTAGE EDITION</div>", unsafe_allow_html=True)
 
-uploaded_file = st.file_uploader("MASUKKAN FOTO (Baju/Sepatu/Jam)", type=["jpg", "png", "jpeg"])
+uploaded_file = st.file_uploader("UPLOAD FOTO DISINI", type=["jpg", "png", "jpeg"])
 
 if uploaded_file is not None:
     img = Image.open(uploaded_file).convert('RGB')
     
-    # Tampilkan Gambar
+    # Frame foto ala koran
+    st.markdown("<div style='border: 2px solid #B22222; padding: 10px;'>", unsafe_allow_html=True)
     st.image(img, use_container_width=True)
+    st.markdown("</div>", unsafe_allow_html=True)
     
-    if st.button('TEBAK SEKARANG'):
+    if st.button('KLASIFIKASI SEKARANG'):
         interpreter = load_model()
         if interpreter:
-            with st.spinner('AI SEDANG BERPIKIR...'):
+            with st.spinner('MENGANALISIS...'):
                 result = predict(img, interpreter)
                 indices = np.argsort(result)[::-1]
 
-                st.markdown("<h3 style='text-align: center;'>HASIL ANALISIS MESIN:</h3>", unsafe_allow_html=True)
+                st.markdown("<h2 style='text-align: center; border-top: 2px solid #B22222; margin-top:20px;'>HASIL PREDIKSI</h2>", unsafe_allow_html=True)
                 
                 for i in indices:
                     score = result[i] * 100
-                    # Tampilan kotak Merah dengan Tulisan Cream
+                    # Tampilan teks merah di atas cream
                     st.markdown(f"""
-                        <div class="prediction-card">
-                            <h3>{CLASS_NAMES[i]}</h3>
-                            <h2>{score:.1f}%</h2>
+                        <div class="retro-border">
+                            <span style='font-size: 20px; font-weight: bold;'>{CLASS_NAMES[i]}</span>
+                            <span style='float: right; font-size: 25px; font-weight: bold;'>{score:.1f}%</span>
                         </div>
                     """, unsafe_allow_html=True)
                     st.progress(int(score))
 
-st.markdown("<br><div class='retro-line'></div>", unsafe_allow_html=True)
-st.markdown("<p style='text-align: center; font-size: 12px;'>Kategori: Accessories (Jam, Tas, Kacamata) | Apparel (Baju, Celana) | Footwear (Sepatu, Sandal)</p>", unsafe_allow_html=True)
+st.markdown("<br><p style='text-align: center; border-top: 1px solid #B22222;'>© 2024 FASHION AI CATALOG - ALL RIGHTS RESERVED</p>", unsafe_allow_html=True)
